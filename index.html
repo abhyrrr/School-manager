@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SchoolManager — Abhir</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #000;
+    --surface: #080808;
+    --surface2: #0f0f0f;
+    --surface3: #161616;
+    --border: #1c1c1c;
+    --border2: #252525;
+    --text: #f2f2f2;
+    --muted: #555;
+    --muted2: #888;
+    --white: #ffffff;
+    --white-dim: rgba(255,255,255,0.05);
+    --white-glow: rgba(255,255,255,0.12);
+    --green: #00e87a;
+    --green-dim: rgba(0,232,122,0.08);
+    --amber: #ffb300;
+    --red: #ff4d4d;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header {
+    background: rgba(0,0,0,0.95);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 16px; font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo::before {
+    content: '▸';
+    font-size: 12px;
+    animation: blink 1.2s step-end infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .logo span { color: var(--text); font-weight: 400; }
+
+  nav { display: flex; gap: 2px; }
+  nav button {
+    background: none; border: none;
+    color: var(--muted2); padding: 6px 14px;
+    border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-weight: 500;
+    font-family: inherit;
+    transition: all 0.15s;
+    letter-spacing: 0.1px;
+  }
+  nav button:hover { background: var(--surface3); color: var(--text); }
+  nav button.active { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .date-chip {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted2);
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+  }
+  .sync-label { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+  .refresh-btn {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 6px 14px;
+    color: var(--muted2); cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
+  .refresh-btn:hover:not(:disabled) { border-color: var(--text); color: var(--text); box-shadow: 0 0 8px var(--white-glow); }
+  .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .refresh-btn.syncing { border-color: var(--amber); color: var(--amber); }
+  .refresh-btn.success { border-color: var(--green); color: var(--green); box-shadow: 0 0 8px rgba(0,232,122,0.25); }
+  .refresh-btn.error { border-color: var(--red); color: var(--red); }
+
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 28px; max-width: 460px; width: 90%; }
+  .modal-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--text); font-family: var(--mono); }
+  .modal-box p { font-size: 13px; color: var(--muted2); line-height: 1.7; margin-bottom: 18px; }
+  .modal-box p strong { color: var(--text); }
+  .modal-box p code { font-family: var(--mono); font-size: 12px; background: var(--surface2); padding: 1px 5px; border-radius: 3px; color: var(--white); }
+  .modal-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; font-family: var(--mono); outline: none; margin-bottom: 14px; }
+  .modal-input:focus { border-color: var(--border2); box-shadow: 0 0 0 2px rgba(255,255,255,0.05); }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-primary { flex: 1; background: var(--text); border: none; border-radius: 8px; padding: 11px; color: #000; font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--mono); }
+  .modal-primary:hover { filter: brightness(1.1); }
+  .modal-cancel { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 11px 18px; color: var(--muted2); font-size: 13px; cursor: pointer; }
+  .modal-note { font-size: 10px; color: var(--muted); margin-top: 12px; font-family: var(--mono); }
+
+  /* SYNC PANEL STEPS */
+  .step { display: flex; gap: 12px; margin-bottom: 18px; }
+  .step-num {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+    color: var(--text); font-family: var(--mono); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .step-body { flex: 1; min-width: 0; }
+  .step-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .step-text { font-size: 12px; color: var(--muted2); line-height: 1.65; }
+  .step-text code { font-family: var(--mono); font-size: 11px; background: var(--surface2); border: 1px solid var(--border2); padding: 1px 5px; border-radius: 3px; color: var(--text); }
+  .inline-link { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+  .inline-link:hover { opacity: 0.75; }
+  .link-btn { background: none; border: none; padding: 0; color: var(--text); font-family: inherit; font-size: 12px; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .link-btn:hover { opacity: 0.75; }
+
+  .bm-chip {
+    display: inline-block; margin-top: 9px;
+    background: #fff; color: #000;
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    padding: 7px 16px; border-radius: 6px;
+    text-decoration: none; cursor: grab;
+    border: 1px solid #fff;
+    transition: transform 0.12s, box-shadow 0.12s;
+    user-select: none;
+  }
+  .bm-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(255,255,255,0.18); }
+  .bm-chip:active { cursor: grabbing; transform: translateY(0); }
+
+  .paste-box {
+    width: 100%; height: 68px; margin-top: 9px; resize: vertical;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 9px 12px; color: var(--text);
+    font-family: var(--mono); font-size: 11px; outline: none; line-height: 1.5;
+  }
+  .paste-box:focus { border-color: rgba(255,255,255,0.3); }
+  .paste-box::placeholder { color: var(--muted); }
+
+  .ask-box {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 20px; text-align: center;
+  }
+  .ask-word {
+    font-family: var(--mono); font-size: 26px; font-weight: 700;
+    color: #fff; letter-spacing: -0.5px; margin-bottom: 8px;
+  }
+  .ask-word::before, .ask-word::after { content: '"'; color: var(--muted); font-weight: 400; }
+  .ask-text { font-size: 12px; color: var(--muted2); line-height: 1.7; }
+
+  .adv { margin-top: 16px; }
+  .adv summary {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    cursor: pointer; padding: 6px 0; list-style: none; user-select: none;
+  }
+  .adv summary::-webkit-details-marker { display: none; }
+  .adv summary::before { content: '▸ '; }
+  .adv[open] summary::before { content: '▾ '; }
+  .adv summary:hover { color: var(--muted2); }
+  .modal-warn { background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.2); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: #ff9999; line-height: 1.6; display: none; }
+
+  /* ── LAYOUT ── */
+  main { max-width: 1320px; margin: 0 auto; padding: 24px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .section-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── BANNERS ── */
+  .banner { border-radius: 8px; padding: 10px 16px; margin-bottom: 18px; font-size: 13px; display: flex; align-items: center; gap: 8px; font-family: var(--mono); }
+  .banner-warn { background: rgba(255,77,77,0.06); border: 1px solid rgba(255,77,77,0.2); color: #ff9999; }
+
+  /* ── WEIGHT BADGES ── */
+  .weight-badges { display: flex; gap: 6px; margin-bottom: 16px; }
+  .wb { padding: 4px 10px; border-radius: 4px; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; border: 1px solid; }
+  .wb-test { background: rgba(255,255,255,0.04); color: var(--text); border-color: rgba(255,255,255,0.12); }
+  .wb-daily { background: rgba(255,255,255,0.04); color: var(--muted2); border-color: rgba(255,255,255,0.08); }
+
+  /* ── STAT TILES ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; transition: border-color 0.15s; }
+  .stat-tile:hover { border-color: var(--border2); }
+  .stat-num { font-family: var(--mono); font-size: 36px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+  .stat-lbl { font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+
+  /* ── COURSE CARDS ── */
+  .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; margin-bottom: 36px; }
+  .course-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; position: relative; overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .course-card:hover { border-color: var(--card-color); box-shadow: 0 0 16px rgba(0,0,0,0.5); }
+  .course-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--card-color); }
+  .course-tag {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--card-color); text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .grade-display { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .grade-pct { font-family: var(--mono); font-size: 34px; font-weight: 700; line-height: 1; color: var(--text); }
+  .grade-letter {
+    font-family: var(--mono); font-size: 18px; font-weight: 700;
+    color: var(--card-color); padding: 2px 8px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 4px;
+  }
+
+  .bars { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; }
+  .bar-lbl { font-family: var(--mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; width: 38px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s cubic-bezier(.4,0,.2,1); }
+  .bar-val { font-family: var(--mono); font-size: 10px; font-weight: 600; width: 36px; text-align: right; }
+
+  /* Inputs on cards */
+  .inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .ig label { display: block; font-family: var(--mono); font-size: 9px; font-weight: 600; color: var(--muted2); margin-bottom: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .ig input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 7px 10px; color: var(--text);
+    font-family: var(--mono); font-size: 13px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .ig input:focus { border-color: var(--card-color); }
+  .ig .hint { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 3px; }
+  .target-row { display: flex; gap: 8px; align-items: flex-end; }
+  .target-row .ig { flex: 1; }
+  .card-btn {
+    flex: 1; background: transparent; border: 1px solid var(--card-color);
+    border-radius: 6px; padding: 8px 10px; color: var(--card-color);
+    font-family: var(--mono); font-size: 11px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .card-btn:hover { background: var(--card-color); color: #000; }
+  .card-result { margin-top: 10px; padding: 10px 12px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); font-size: 12px; line-height: 1.7; display: none; font-family: var(--mono); }
+  .card-result.show { display: block; }
+
+  /* ── FILTER ROW ── */
+  .filter-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 5px 12px;
+    color: var(--muted2); font-size: 11px; font-weight: 600;
+    font-family: var(--mono); cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .filter-btn.active { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+  /* ── ADD FORM ── */
+  .add-toggle {
+    background: none; border: 1px dashed var(--border);
+    border-radius: 6px; padding: 8px 16px; color: var(--muted);
+    font-family: var(--mono); font-size: 11px; cursor: pointer;
+    transition: all 0.15s; margin-bottom: 14px; width: 100%;
+  }
+  .add-toggle:hover { border-color: var(--text); color: var(--text); }
+  .add-form-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .add-form-grid { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+  .add-form-grid .ig { margin: 0; }
+  .add-submit { background: var(--text); border: none; border-radius: 6px; padding: 8px 16px; color: #000; font-family: var(--mono); font-size: 12px; font-weight: 700; cursor: pointer; }
+
+  /* ── ASSIGNMENT LIST ── */
+  .asgn-list { display: flex; flex-direction: column; gap: 6px; }
+  .asgn-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .asgn-item:hover { border-color: var(--item-color); background: rgba(255,255,255,0.01); }
+  .asgn-item.overdue { border-left: 2px solid var(--red); }
+  .asgn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--item-color); flex-shrink: 0; }
+  .asgn-info { flex: 1; min-width: 0; }
+  .asgn-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .asgn-meta { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+  .asgn-course { font-family: var(--mono); font-size: 10px; }
+  .type-badge { font-family: var(--mono); font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 3px; letter-spacing: 0.3px; }
+  .type-test { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid rgba(255,255,255,0.12); }
+  .type-daily { background: rgba(255,255,255,0.03); color: var(--muted2); border: 1px solid rgba(255,255,255,0.07); }
+  .asgn-pts { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; flex-shrink: 0; min-width: 44px; }
+  .asgn-due { text-align: right; flex-shrink: 0; }
+  .asgn-due-date { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+  .asgn-due-rel { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .asgn-status { font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; flex-shrink: 0; letter-spacing: 0.3px; }
+  .asgn-status.submitted { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,232,122,0.2); }
+  .asgn-status.pending { background: var(--surface2); color: var(--muted2); border: 1px solid var(--border); }
+  .asgn-status.overdue { background: rgba(255,77,77,0.08); color: var(--red); border: 1px solid rgba(255,77,77,0.2); }
+  .asgn-status.due-soon { background: rgba(255,179,0,0.08); color: var(--amber); border: 1px solid rgba(255,179,0,0.2); }
+  .check-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 4px; transition: color 0.15s; }
+  .check-btn:hover { color: var(--green); }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-family: var(--mono); font-size: 13px; }
+
+  /* ── CALENDAR ── */
+  .cal-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .cal-month-lbl { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--text); }
+  .cal-nav button {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); width: 30px; height: 30px;
+    cursor: pointer; font-size: 16px; margin-left: 6px; transition: border-color 0.15s;
+  }
+  .cal-nav button:hover { border-color: var(--border2); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); }
+  .cal-dname { padding: 10px 0; text-align: center; font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+  .cal-cell { min-height: 90px; padding: 7px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  .cal-cell:nth-child(7n) { border-right: none; }
+  .cal-cell:hover { background: var(--surface2); }
+  .cal-cell.other-month .cal-date { color: var(--border2); }
+  .cal-cell.today { background: rgba(255,255,255,0.04); }
+  .cal-cell.today .cal-date { background: #fff; color: #000; }
+  .cal-date { width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .cal-event { font-family: var(--mono); font-size: 9px; font-weight: 600; padding: 2px 5px; border-radius: 2px; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--muted2); }
+  .legend-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* ── CALCULATOR ── */
+  .calc-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .calc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px; }
+  .calc-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .calc-card .subtitle { font-family: var(--mono); font-size: 11px; color: var(--muted2); margin-bottom: 18px; }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--muted2); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px; }
+  .form-group select, .form-group input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 9px 12px; color: var(--text);
+    font-family: var(--mono); font-size: 13px; outline: none; transition: border-color 0.15s;
+  }
+  .form-group select:focus, .form-group input:focus { border-color: var(--border2); }
+  .form-group select option { background: var(--surface2); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .section-box { background: var(--surface2); border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .section-box-lbl { font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .calc-btn {
+    width: 100%; background: var(--text); border: none; border-radius: 8px;
+    padding: 11px; color: #000; font-family: var(--mono); font-size: 13px;
+    font-weight: 700; cursor: pointer; margin-top: 4px; transition: filter 0.15s;
+  }
+  .calc-btn:hover { filter: brightness(1.1); }
+  .calc-result { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 16px; display: none; }
+  .calc-result.show { display: block; }
+  .calc-headline { font-family: var(--mono); font-size: 24px; font-weight: 700; margin-bottom: 8px; color: var(--white); }
+  .calc-sub { font-family: var(--mono); font-size: 12px; color: var(--muted2); line-height: 1.8; }
+  .add-row-btn { width: 100%; background: var(--surface2); border: 1px dashed var(--border2); border-radius: 6px; padding: 7px; color: var(--muted); font-family: var(--mono); cursor: pointer; font-size: 11px; margin-top: 6px; transition: all 0.15s; }
+  .add-row-btn:hover { border-color: var(--text); color: var(--text); }
+  .inline-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .inline-row input, .inline-row select { background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 9px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; }
+  .inline-row input:focus, .inline-row select:focus { border-color: var(--border2); }
+  .remove-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; border-radius: 4px; padding: 2px 6px; }
+  .remove-btn:hover { color: var(--red); }
+  .sim-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 4px; }
+  .sim-table th { text-align: left; padding: 7px 10px; color: var(--muted); font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+  .sim-table td { padding: 5px 10px; border-bottom: 1px solid var(--border); }
+  .sim-table tr:last-child td { border: none; }
+  .sim-table input { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; width: 100%; }
+  .sim-table input:focus { border-color: var(--border2); }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 12px 16px; font-family: var(--mono); font-size: 12px; z-index: 9999; max-width: 360px; line-height: 1.6; box-shadow: 0 4px 24px rgba(0,0,0,0.6); }
+  .toast.error { border-color: rgba(255,77,77,0.4); color: #ff9999; }
+  .toast.success { border-color: rgba(0,232,122,0.4); color: var(--green); }
+
+  @media(max-width:900px){ .stats-grid{grid-template-columns:1fr 1fr} .calc-layout{grid-template-columns:1fr} .add-form-grid{grid-template-columns:1fr 1fr} }
+  @media(max-width:600px){ .courses-grid{grid-template-columns:1fr} .stats-grid{grid-template-columns:1fr 1fr} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">School<span>Manager</span></div>
+  <nav>
+    <button class="active" onclick="showTab('overview')">Overview</button>
+    <button onclick="showTab('calendar')">Calendar</button>
+    <button onclick="showTab('calculator')">Calculator</button>
+  </nav>
+  <div class="header-right">
+    <span class="sync-label" id="sync-label"></span>
+    <span class="sync-label" id="skyward-label" style="color:#a78bfa"></span>
+    <button class="refresh-btn" id="refresh-btn" onclick="refreshFromCanvas()">⟳ Refresh</button>
+    <div class="date-chip" id="date-display"></div>
+  </div>
+</header>
+
+<!-- SYNC PANEL -->
+<div class="modal-overlay" id="sync-modal" style="display:none">
+  <div class="modal-box" style="max-width:520px">
+    <h3>// canvas_sync</h3>
+    <p style="margin-bottom:16px">
+      Canvas blocks API calls from outside its own site, so this page can't fetch it directly.
+      Claude can, though — just ask.
+    </p>
+
+    <div class="ask-box">
+      <div class="ask-word">update</div>
+      <div class="ask-text">Type that in your Claude chat and the dashboard refreshes itself — grades, assignments, calendar, all of it. Takes about 30 seconds.</div>
+    </div>
+
+    <details class="adv">
+      <summary>manual paste (offline fallback)</summary>
+      <div class="step-text" style="margin:10px 0 0">
+        Run <button class="link-btn" id="copy-script-btn" onclick="copyConsoleScript()">this script</button>
+        in the console (F12) on
+        <a href="https://southlakecarroll.instructure.com" target="_blank" class="inline-link">Canvas ↗</a>,
+        then paste the result here.
+      </div>
+      <div class="modal-warn" id="sync-warn"></div>
+      <textarea class="paste-box" id="paste-box" placeholder="paste sync data here…"></textarea>
+      <button class="modal-primary" style="width:100%;margin-top:8px" onclick="handlePaste()">Apply</button>
+    </details>
+
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="modal-cancel" style="width:100%" onclick="hideSyncPanel()">Close</button>
+    </div>
+  </div>
+</div>
+
+<main>
+
+<!-- OVERVIEW -->
+<div class="tab-panel active" id="tab-overview">
+  <div id="overdue-banner" class="banner banner-warn" style="display:none">⚠ <span id="overdue-text"></span></div>
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <div class="section-label">Courses — 2026-2027 Sem 1</div>
+  <div class="weight-badges">
+    <span class="wb wb-test">TESTS/PROJECTS = 60%</span>
+    <span class="wb wb-daily">DAILY/QUIZ/HW = 40%</span>
+  </div>
+  <div class="courses-grid" id="courses-grid"></div>
+
+  <div class="section-label">Assignments</div>
+  <button class="add-toggle" onclick="toggleAddForm()">+ add assignment manually</button>
+  <div id="add-form-wrap" style="display:none">
+    <div class="add-form-box">
+      <div class="add-form-grid">
+        <div class="ig"><label>Name</label><input type="text" id="add-name" placeholder="Chapter 3 Test"></div>
+        <div class="ig"><label>Course</label><select id="add-course"></select></div>
+        <div class="ig"><label>Type</label><select id="add-type"><option value="test">Test/Project</option><option value="daily">Daily/HW</option></select></div>
+        <div class="ig"><label>Due Date</label><input type="date" id="add-due"></div>
+        <div class="ig"><label>Points</label><input type="number" id="add-points" placeholder="100" min="0"></div>
+        <button class="add-submit" onclick="addAssignment()">Add</button>
+      </div>
+    </div>
+  </div>
+  <div class="filter-row" id="filter-row"></div>
+  <div class="asgn-list" id="asgn-list"></div>
+</div>
+
+<!-- CALENDAR -->
+<div class="tab-panel" id="tab-calendar">
+  <div class="legend" id="cal-legend"></div>
+  <div class="cal-wrap">
+    <div class="cal-head">
+      <div class="cal-month-lbl" id="cal-month-label"></div>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">‹</button>
+        <button onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<div class="tab-panel" id="tab-calculator">
+  <div class="calc-layout">
+    <div class="calc-card">
+      <h3>What score do I need?</h3>
+      <p class="subtitle">// Carroll ISD: Tests/Projects 60% · Daily 40%</p>
+      <div class="form-group"><label>Course</label><select id="calc-course"></select></div>
+      <div class="section-box">
+        <div class="section-box-lbl" style="color:var(--text)">Tests &amp; Projects — 60%</div>
+        <div class="two-col">
+          <div class="form-group" style="margin:0"><label>Current Avg %</label><input type="number" id="calc-test-avg" placeholder="88" min="0" max="100"></div>
+          <div class="form-group" style="margin:0"><label>Points Taken</label><input type="number" id="calc-test-pts" placeholder="200" min="0"></div>
+        </div>
+      </div>
+      <div class="section-box">
+        <div class="section-box-lbl" style="color:var(--muted2)">Daily / Quizzes / HW — 40%</div>
+        <div class="two-col">
+          <div class="form-group" style="margin:0"><label>Current Avg %</label><input type="number" id="calc-daily-avg" placeholder="95" min="0" max="100"></div>
+          <div class="form-group" style="margin:0"><label>Points Taken</label><input type="number" id="calc-daily-pts" placeholder="100" min="0"></div>
+        </div>
+      </div>
+      <div class="form-group"><label>Target Overall Grade %</label><input type="number" id="calc-target" placeholder="90" min="0" max="100"></div>
+      <div class="form-group">
+        <label>Upcoming Assignments</label>
+        <div id="upcoming-rows"></div>
+        <button class="add-row-btn" onclick="addCalcRow()">+ add assignment</button>
+      </div>
+      <button class="calc-btn" onclick="runCalculator()">Calculate</button>
+      <div class="calc-result" id="calc-result"><div class="calc-headline" id="calc-headline"></div><div class="calc-sub" id="calc-sub"></div></div>
+    </div>
+
+    <div class="calc-card">
+      <h3>Weighted Grade Simulator</h3>
+      <p class="subtitle">// pre-set to Carroll ISD 60/40 split</p>
+      <div class="form-group"><label>Course</label><select id="sim-course"></select></div>
+      <table class="sim-table">
+        <thead><tr><th style="width:40%">Category</th><th style="width:20%">Weight %</th><th>Score %</th><th></th></tr></thead>
+        <tbody id="sim-tbody"></tbody>
+      </table>
+      <button class="add-row-btn" onclick="addSimRow()">+ add category</button>
+      <button class="calc-btn" style="margin-top:14px" onclick="runSimulator()">Simulate</button>
+      <div class="calc-result" id="sim-result"><div class="calc-headline" id="sim-headline"></div><div class="calc-sub" id="sim-sub"></div></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ── CONFIG (updated by scheduled sync task) ──
+const ICAL_URL = 'https://southlakecarroll.instructure.com/feeds/calendars/user_vGEcs1XlX7Mmpb2SiPLTnyeRPLG2o5Xse1fvSz3K.ics';
+const SKYWARD_LAST_SYNC = ''; // filled by Skyward sync
+const SYNC_DATE = '2026-08-15'; // last successful sync date
+
+const COURSES = [
+  { id:52259, name:"Aerospace Engineering Honors", short:"Aerospace Eng", color:"#6366f1" },
+  { id:52252, name:"AP Calculus AB",               short:"AP Calc AB",   color:"#f59e0b" },
+  { id:52857, name:"AP Computer Science 1",         short:"AP CS 1",      color:"#10b981" },
+  { id:52984, name:"AP English 3/GT",               short:"AP English 3", color:"#ec4899" },
+  { id:52551, name:"AP Physics C E&M",              short:"AP Physics C", color:"#3b82f6" },
+  { id:52301, name:"AP Statistics",                 short:"AP Stats",     color:"#a78bfa" },
+  { id:54431, name:"AP US History",                 short:"APUSH",        color:"#f87171" },
+  { id:52322, name:"Honors Robotics 2",             short:"Robotics 2",   color:"#2dd4bf" }
+];
+
+let ASSIGNMENTS = [
+  { course:"AP Computer Science 1", name:"In Class - 8/11-12", due:"2026-08-12", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP Computer Science 1", name:"HW: Digital Dragons Lessons", due:"2026-08-14", points:0, state:"unsubmitted", type:"daily" },
+  { course:"Honors Robotics 2", name:"Robotics Lab Safety", due:"2026-08-14", points:0, state:"submitted", type:"daily" },
+  { course:"AP Computer Science 1", name:"In Class - 8/13-14", due:"2026-08-14", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP English 3/GT", name:"Course Syllabus Google Form Receipt DUE", due:"2026-08-14", points:0, state:"unsubmitted", type:"daily" },
+  { course:"Honors Robotics 2", name:"Digital Dragons Lessons Assignment", due:"2026-08-14", points:0, state:"unsubmitted", type:"daily" },
+  { course:"Honors Robotics 2", name:"Robotics 2 Required Supplies", due:"2026-08-17", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP English 3/GT", name:"Personal SITREP Assignment", due:"2026-08-17", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP English 3/GT", name:"Group Memoir Title Selection and Reading Schedule DUE", due:"2026-08-17", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP Calculus AB", name:"DM-Precal Review #1", due:"2026-08-18", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP Computer Science 1", name:"Unit 0a - Syntax Output Quiz", due:"2026-08-18", points:0, state:"unsubmitted", type:"test" },
+  { course:"AP Computer Science 1", name:"In Class - 8/17-18", due:"2026-08-18", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP Calculus AB", name:"WS-Types of Functions", due:"2026-08-18", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP Calculus AB", name:"Skills Quiz - Special Trig Values", due:"2026-08-18", points:0, state:"unsubmitted", type:"test" },
+  { course:"AP Computer Science 1", name:"Variables Worksheet", due:"2026-08-20", points:0, state:"unsubmitted", type:"daily" },
+  { course:"Aerospace Engineering Honors", name:"About You Welcome Slides Submission", due:"2026-08-20", points:0, state:"submitted", type:"daily" },
+  { course:"AP English 3/GT", name:"Memoir Parent Permission DUE", due:"2026-08-21", points:0, state:"unsubmitted", type:"daily" },
+  { course:"AP English 3/GT", name:"MC Quiz #1", due:"2026-08-27", points:0, state:"unsubmitted", type:"test" },
+  { course:"AP English 3/GT", name:"Rhetorical Analysis Timed Write", due:"2026-09-15", points:0, state:"unsubmitted", type:"test" },
+  { course:"AP English 3/GT", name:"MC Quiz #2", due:"2026-09-17", points:0, state:"unsubmitted", type:"test" },
+  { course:"AP English 3/GT", name:"Memoir Group Presentation DUE", due:"2026-09-21", points:0, state:"unsubmitted", type:"test" },
+  { course:"AP English 3/GT", name:"AP MC Test", due:"2026-10-01", points:0, state:"unsubmitted", type:"test" },
+];
+
+// ── MANUAL ASSIGNMENTS (user-added; never overwritten by sync) ──
+let MANUAL_ASSIGNMENTS = [];
+function getAllAssignments(){
+  return [...ASSIGNMENTS,...MANUAL_ASSIGNMENTS].sort((a,b)=>new Date(a.due)-new Date(b.due));
+}
+function saveManual(){
+  try{localStorage.setItem('school_manual',JSON.stringify(MANUAL_ASSIGNMENTS));}catch(e){}
+}
+function loadManual(){
+  try{MANUAL_ASSIGNMENTS=JSON.parse(localStorage.getItem('school_manual')||'[]');}catch(e){MANUAL_ASSIGNMENTS=[];}
+}
+
+// ── SKYWARD GRADES (updated by Skyward sync task) ──
+// Format: { "Course Name": { testAvg: 92.5, dailyAvg: 98.0 } }
+const SKYWARD_GRADES = {
+  // Example (will be filled by sync):
+  // "AP Calculus AB": { testAvg: null, dailyAvg: null },
+};
+
+const grades = Object.keys(SKYWARD_GRADES).length > 0 ? {...SKYWARD_GRADES} : {};
+
+// ── UTILS ──
+const getCourse = n => COURSES.find(c=>c.name===n)||{color:"#555",short:n};
+const getColor  = n => getCourse(n).color;
+const parseDate = ds => new Date(ds+'T12:00:00');
+const fmtDate   = ds => parseDate(ds).toLocaleDateString('en-US',{month:'short',day:'numeric',weekday:'short'});
+function daysUntil(ds){ const t=new Date();t.setHours(0,0,0,0);const d=parseDate(ds);d.setHours(0,0,0,0);return Math.round((d-t)/86400000); }
+function relLabel(ds){ const n=daysUntil(ds);if(n<0)return`${Math.abs(n)}d overdue`;if(n===0)return'due today';if(n===1)return'tomorrow';return`in ${n}d`; }
+function letterGrade(p){ if(p>=97)return'A+';if(p>=93)return'A';if(p>=90)return'A-';if(p>=87)return'B+';if(p>=83)return'B';if(p>=80)return'B-';if(p>=77)return'C+';if(p>=73)return'C';if(p>=70)return'C-';if(p>=67)return'D+';if(p>=63)return'D';if(p>=60)return'D-';return'F'; }
+function weightedGrade(g){ if(!g)return null;const hT=g.testPts>0,hD=g.dailyPts>0;if(!hT&&!hD)return null;if(hT&&hD)return g.testAvg*0.6+g.dailyAvg*0.4;if(hT)return g.testAvg;return g.dailyAvg; }
+function statusClass(a){ if(a.state==='submitted')return'submitted';const n=daysUntil(a.due);if(n<0)return'overdue';if(n<=2)return'due-soon';return'pending'; }
+function statusLabel(a){ if(a.state==='submitted')return'✓ submitted';const n=daysUntil(a.due);if(n<0)return'⚠ overdue';if(n<=2)return'⚡ due soon';return'pending'; }
+function toast(msg,type='error',ms=5500){ const d=document.createElement('div');d.className='toast '+type;d.innerHTML=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),ms); }
+
+// ── TABS ──
+function showTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const map={overview:0,calendar:1,calculator:2};
+  document.querySelectorAll('nav button')[map[name]].classList.add('active');
+  if(name==='calendar')renderCalendar();
+}
+
+// ── STATS ──
+function renderStats(){
+  const sub=getAllAssignments().filter(a=>a.state==='submitted').length;
+  const _all=getAllAssignments();
+  const over=_all.filter(a=>a.state!=='submitted'&&daysUntil(a.due)<0).length;
+  const week=_all.filter(a=>a.state!=='submitted'&&daysUntil(a.due)>=0&&daysUntil(a.due)<=7).length;
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-tile"><div class="stat-num" style="color:var(--white)">${COURSES.length}</div><div class="stat-lbl">Courses</div></div>
+    <div class="stat-tile"><div class="stat-num" style="color:var(--green)">${sub}</div><div class="stat-lbl">Submitted</div></div>
+    <div class="stat-tile"><div class="stat-num" style="color:var(--amber)">${week}</div><div class="stat-lbl">Due This Week</div></div>
+    <div class="stat-tile"><div class="stat-num" style="color:var(--red)">${over}</div><div class="stat-lbl">Overdue</div></div>`;
+  const b=document.getElementById('overdue-banner');
+  if(over>0){b.style.display='flex';document.getElementById('overdue-text').textContent=`${over} overdue assignment${over>1?'s':''}`;} else b.style.display='none';
+}
+
+// ── COURSE CARDS ──
+function renderCourseCards(){
+  document.getElementById('courses-grid').innerHTML=COURSES.map(c=>{
+    const g=grades[c.name]||{testAvg:'',testPts:0,dailyAvg:'',dailyPts:0};
+    const overall=weightedGrade({testAvg:g.testAvg||0,testPts:g.testPts||0,dailyAvg:g.dailyAvg||0,dailyPts:g.dailyPts||0});
+    const overallStr=overall!=null?overall.toFixed(1)+'%':'—.—%';
+    const letter=overall!=null?letterGrade(overall):'—';
+    const tPct=g.testAvg||0,dPct=g.dailyAvg||0;
+    return `<div class="course-card" style="--card-color:${c.color}">
+      <div class="course-tag">${c.short}</div>
+      <div class="grade-display">
+        <div class="grade-pct">${overallStr}</div>
+        <div class="grade-letter">${letter}</div>
+      </div>
+      <div class="bars">
+        <div class="bar-row">
+          <div class="bar-lbl" style="color:${c.color}">TESTS</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${tPct}%;background:${c.color}"></div></div>
+          <div class="bar-val" style="color:${c.color}">${g.testAvg!=null&&g.testAvg!==''?g.testAvg+'%':'—'}</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-lbl" style="color:${c.color};opacity:0.6">DAILY</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${dPct}%;background:${c.color};opacity:0.6"></div></div>
+          <div class="bar-val" style="color:${c.color};opacity:0.6">${g.dailyAvg!=null&&g.dailyAvg!==''?g.dailyAvg+'%':'—'}</div>
+        </div>
+      </div>
+      <div class="inputs-grid">
+        <div class="ig">
+          <label style="color:${c.color}">Test/Project Avg %</label>
+          <input type="number" id="t-avg-${c.id}" placeholder="88" min="0" max="100" value="${g.testAvg!=null?g.testAvg:''}" oninput="saveGrade('${c.name}',${c.id})">
+          <div class="hint">60% weight</div>
+        </div>
+        <div class="ig">
+          <label style="color:${c.color};opacity:0.65">Daily Grade Avg %</label>
+          <input type="number" id="d-avg-${c.id}" placeholder="95" min="0" max="100" value="${g.dailyAvg!=null?g.dailyAvg:''}" oninput="saveGrade('${c.name}',${c.id})">
+          <div class="hint">40% weight</div>
+        </div>
+      </div>
+      <div class="target-row">
+        <div class="ig"><label>Target %</label><input type="number" id="tgt-${c.id}" placeholder="90" min="0" max="100"></div>
+        <button class="card-btn" onclick="quickCalc('${c.name}',${c.id})">What do I need?</button>
+      </div>
+      <div class="card-result" id="result-${c.id}"></div>
+    </div>`;
+  }).join('');
+}
+
+function saveGrade(name,id){
+  const tAvg=document.getElementById('t-avg-'+id)?.value;
+  const dAvg=document.getElementById('d-avg-'+id)?.value;
+  grades[name]={testAvg:tAvg!==''?parseFloat(tAvg):null,testPts:1,dailyAvg:dAvg!==''?parseFloat(dAvg):null,dailyPts:1};
+  const overall=weightedGrade({testAvg:grades[name].testAvg||0,testPts:grades[name].testPts,dailyAvg:grades[name].dailyAvg||0,dailyPts:grades[name].dailyPts});
+  const card=document.getElementById('t-avg-'+id)?.closest('.course-card');
+  if(card){
+    const gp=card.querySelector('.grade-pct');
+    const gl=card.querySelector('.grade-letter');
+    if(gp)gp.textContent=overall!=null?overall.toFixed(1)+'%':'—.—%';
+    if(gl)gl.textContent=overall!=null?letterGrade(overall):'—';
+    const bars=card.querySelectorAll('.bar-fill');
+    const vals=card.querySelectorAll('.bar-val');
+    if(bars[0])bars[0].style.width=(grades[name].testAvg||0)+'%';
+    if(bars[1])bars[1].style.width=(grades[name].dailyAvg||0)+'%';
+    if(vals[0])vals[0].textContent=grades[name].testAvg!=null?grades[name].testAvg+'%':'—';
+    if(vals[1])vals[1].textContent=grades[name].dailyAvg!=null?grades[name].dailyAvg+'%':'—';
+  }
+}
+
+function quickCalc(name,id){
+  const g=grades[name]||{};
+  const target=parseFloat(document.getElementById('tgt-'+id)?.value);
+  const el=document.getElementById('result-'+id);
+  if(!target||target<0||target>100){el.innerHTML='<span style="color:var(--red)">enter a valid target %</span>';el.classList.add('show');return;}
+  const tA=g.testAvg!=null?g.testAvg:null,dA=g.dailyAvg!=null?g.dailyAvg:null;
+  const color=getCourse(name).color;let lines=[];
+  if(dA!=null&&tA==null){
+    const n=(target-dA*0.4)/0.6;
+    lines.push(`keep daily at <b>${dA}%</b>`);
+    if(n>100)lines.push(`<span style="color:var(--red)">impossible — max reach is ${(100*0.6+dA*0.4).toFixed(1)}%</span>`);
+    else if(n<0)lines.push('you\'re already on track');
+    else lines.push(`need test avg → <span style="font-size:18px;font-weight:700;color:${color}">${n.toFixed(1)}%</span>`);
+  } else if(tA!=null&&dA==null){
+    const n=(target-tA*0.6)/0.4;
+    lines.push(`keep test avg at <b>${tA}%</b>`);
+    if(n>100)lines.push(`<span style="color:var(--red)">impossible — max reach is ${(tA*0.6+100*0.4).toFixed(1)}%</span>`);
+    else if(n<0)lines.push('you\'re already on track');
+    else lines.push(`need daily avg → <span style="font-size:18px;font-weight:700;color:${color}">${n.toFixed(1)}%</span>`);
+  } else if(tA!=null&&dA!=null){
+    const overall=tA*0.6+dA*0.4;
+    lines.push(`current weighted: <b>${overall.toFixed(1)}%</b> (${letterGrade(overall)})`);
+    if(overall>=target)lines.push(`<span style="color:var(--green)">✓ already at or above ${target}%</span>`);
+    else{const gap=target-overall;lines.push(`need <span style="color:${color}">+${gap.toFixed(1)}%</span> — raise tests by ${(gap/0.6).toFixed(1)}pt or daily by ${(gap/0.4).toFixed(1)}pt`);}
+  } else lines.push('enter your current test/daily averages above first');
+  el.innerHTML=lines.join('<br>');el.classList.add('show');
+}
+
+// ── ASSIGNMENT LIST ──
+let activeFilter='all';
+function renderAssignmentList(){
+  const sel=document.getElementById('add-course');
+  if(!sel.children.length)COURSES.forEach(c=>{const o=document.createElement('option');o.value=c.name;o.textContent=c.name;sel.appendChild(o);});
+  document.getElementById('filter-row').innerHTML=
+    ['all','pending','due-soon','submitted'].map(f=>`<button class="filter-btn ${activeFilter===f?'active':''}" onclick="setFilter('${f}')">${{all:'all',pending:'pending','due-soon':'due soon',submitted:'submitted'}[f]}</button>`).join('')+
+    COURSES.map(c=>`<button class="filter-btn ${activeFilter===c.name?'active':''}" onclick="setFilter('${c.name}')" style="${activeFilter===c.name?`background:${c.color}11;border-color:${c.color}44;color:${c.color}`:''}"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${c.color}"></span>${c.short}</button>`).join('');
+  const sorted=getAllAssignments();
+  const filtered=sorted.filter(a=>{
+    if(activeFilter==='all')return true;
+    if(activeFilter==='submitted')return a.state==='submitted';
+    if(activeFilter==='pending')return a.state!=='submitted'&&daysUntil(a.due)>=0;
+    if(activeFilter==='due-soon')return a.state!=='submitted'&&daysUntil(a.due)>=0&&daysUntil(a.due)<=3;
+    return a.course===activeFilter;
+  });
+  const list=document.getElementById('asgn-list');
+  if(!filtered.length){list.innerHTML='<div class="empty-state">// no assignments match filter</div>';return;}
+  list.innerHTML=filtered.map(a=>{
+    const color=getColor(a.course),sc=statusClass(a),sl=statusLabel(a);
+    const isManual=!!a.manual;
+    const esc=s=>s.replace(/'/g,"\\'");
+    const badge=a.type==='test'?`<span class="type-badge type-test">TEST/PROJ</span>`:`<span class="type-badge type-daily">DAILY</span>`;
+    const manualBadge=isManual?`<span class="type-badge" style="background:#ffffff11;color:#888;border:1px solid #333">MANUAL</span>`:'';
+    const delBtn=isManual?`<button class="check-btn del-btn" onclick="deleteManual('${esc(a.course)}','${esc(a.name)}')" title="delete manual assignment">×</button>`:'';
+    return `<div class="asgn-item ${sc==='overdue'?'overdue':''}" style="--item-color:${color};${a.state==='submitted'?'opacity:0.4':''}">
+      <div class="asgn-dot"></div>
+      <div class="asgn-info">
+        <div class="asgn-name">${a.name}</div>
+        <div class="asgn-meta"><span class="asgn-course" style="color:${color}">${a.course}</span>${badge}${manualBadge}</div>
+      </div>
+      ${a.points>0?`<div class="asgn-pts">${a.points}pts</div>`:''}
+      <div class="asgn-due"><div class="asgn-due-date">${fmtDate(a.due)}</div><div class="asgn-due-rel">${relLabel(a.due)}</div></div>
+      <div class="asgn-status ${sc}">${sl}</div>
+      <button class="check-btn" onclick="toggleSubmitByKey('${esc(a.course)}','${esc(a.name)}',${isManual})" title="toggle submitted">✓</button>
+      ${delBtn}
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f){activeFilter=f;renderAssignmentList();}
+function toggleSubmitByKey(course,name,isManual){
+  const arr=isManual?MANUAL_ASSIGNMENTS:ASSIGNMENTS;
+  const item=arr.find(a=>a.course===course&&a.name===name);
+  if(item){item.state=item.state==='submitted'?'unsubmitted':'submitted';if(isManual)saveManual();}
+  renderStats();renderAssignmentList();
+}
+function deleteManual(course,name){
+  MANUAL_ASSIGNMENTS=MANUAL_ASSIGNMENTS.filter(a=>!(a.course===course&&a.name===name));
+  saveManual();renderStats();renderAssignmentList();renderCalendar();
+}
+function toggleAddForm(){const f=document.getElementById('add-form-wrap');f.style.display=f.style.display==='none'?'block':'none';}
+function addAssignment(){
+  const name=document.getElementById('add-name').value.trim();
+  const course=document.getElementById('add-course').value;
+  const type=document.getElementById('add-type').value;
+  const due=document.getElementById('add-due').value;
+  const pts=parseFloat(document.getElementById('add-points').value)||0;
+  if(!name||!due){alert('Name and due date required.');return;}
+  MANUAL_ASSIGNMENTS.push({course,name,due,points:pts,state:'unsubmitted',type,manual:true});
+  saveManual();
+  document.getElementById('add-name').value='';
+  document.getElementById('add-due').value='';
+  document.getElementById('add-points').value='';
+  renderStats();renderAssignmentList();renderCalendar();toggleAddForm();
+}
+
+// ── CALENDAR ──
+let calYear=2026,calMonth=7;
+function changeMonth(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function renderCalendar(){
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent=`${months[calMonth]} ${calYear}`;
+  document.getElementById('cal-legend').innerHTML=COURSES.map(c=>`<div class="legend-item"><div class="legend-dot" style="background:${c.color}"></div>${c.short}</div>`).join('');
+  const first=new Date(calYear,calMonth,1),last=new Date(calYear,calMonth+1,0);
+  const todayStr=new Date().toISOString().slice(0,10);
+  let html=['SUN','MON','TUE','WED','THU','FRI','SAT'].map(d=>`<div class="cal-dname">${d}</div>`).join('');
+  for(let i=0;i<first.getDay();i++){const pd=new Date(calYear,calMonth,-first.getDay()+i+1);html+=`<div class="cal-cell other-month"><div class="cal-date">${pd.getDate()}</div></div>`;}
+  for(let d=1;d<=last.getDate();d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=ds===todayStr;
+    const events=getAllAssignments().filter(a=>a.due===ds).map(a=>{const col=getColor(a.course);return`<div class="cal-event" style="background:${col}18;color:${col}" title="${a.name}">${a.name.slice(0,18)}${a.name.length>18?'…':''}</div>`;}).join('');
+    html+=`<div class="cal-cell ${isToday?'today':''}"><div class="cal-date">${d}</div>${events}</div>`;
+  }
+  const filled=first.getDay()+last.getDate();
+  for(let i=1;i<=(filled%7===0?0:7-filled%7);i++)html+=`<div class="cal-cell other-month"><div class="cal-date">${i}</div></div>`;
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+// ── CALCULATOR ──
+function populateSelects(){
+  ['calc-course','sim-course'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel.children.length)COURSES.forEach(c=>{const o=document.createElement('option');o.value=c.name;o.textContent=c.name;sel.appendChild(o);});
+  });
+  addCalcRow();
+  addSimRow('Tests & Projects','60');
+  addSimRow('Daily (Quizzes/HW)','40');
+}
+
+let calcRowCount=0;
+function addCalcRow(){
+  const id=++calcRowCount;
+  const div=document.createElement('div');div.className='inline-row';div.id='calc-row-'+id;
+  div.innerHTML=`<input type="text" placeholder="Assignment name" style="flex:2"><select class="calc-type-sel" style="flex:1"><option value="test">Test/Proj (60%)</option><option value="daily">Daily (40%)</option></select><input type="number" placeholder="pts" min="0" style="width:60px"><button class="remove-btn" onclick="document.getElementById('calc-row-${id}').remove()">×</button>`;
+  document.getElementById('upcoming-rows').appendChild(div);
+}
+
+function runCalculator(){
+  const tA=parseFloat(document.getElementById('calc-test-avg').value);
+  const tP=parseFloat(document.getElementById('calc-test-pts').value)||0;
+  const dA=parseFloat(document.getElementById('calc-daily-avg').value);
+  const dP=parseFloat(document.getElementById('calc-daily-pts').value)||0;
+  const target=parseFloat(document.getElementById('calc-target').value);
+  if(!target){alert('Enter a target grade.');return;}
+  let fTP=0,fDP=0;
+  document.querySelectorAll('#upcoming-rows .inline-row').forEach(row=>{
+    const pts=parseFloat(row.querySelectorAll('input[type="number"]')[0]?.value)||0;
+    const type=row.querySelector('.calc-type-sel')?.value||'test';
+    if(type==='test')fTP+=pts;else fDP+=pts;
+  });
+  const hT=!isNaN(tA)&&tP>0,hD=!isNaN(dA)&&dP>0;
+  const course=document.getElementById('calc-course').value;
+  const color=getColor(course);
+  let headline='',sub='';
+  if(!hT&&!hD&&fTP===0&&fDP===0){
+    headline='enter current grades';sub='fill in your averages and points taken above.';
+  } else {
+    let cur=null;if(hT&&hD)cur=tA*0.6+dA*0.4;else if(hT)cur=tA;else if(hD)cur=dA;
+    if(cur!==null&&cur>=target){headline='already there';sub=`current weighted grade: ${cur.toFixed(1)}% — you\'ve hit your ${target}% target.`;}
+    else if(fTP===0&&fDP===0){
+      if(cur!==null){const gap=target-cur;headline=`need +${gap.toFixed(1)}%`;sub=`raise test avg by ${(gap/0.6).toFixed(1)}pt OR daily avg by ${(gap/0.4).toFixed(1)}pt`;}
+      else{headline='add current grades';sub='enter at least one category average above.';}
+    } else {
+      const totalTP=(tP||0)+fTP,totalDP=(dP||0)+fDP;
+      const earnT=(hT?(tA/100*tP):0),earnD=(hD?(dA/100*dP):0);
+      if(fTP>0&&fDP>0){
+        const needT=(target*totalTP-(earnT*100/tP*0.6*totalTP+earnD*100/dP*0.4*totalDP)/100)*100/fTP;
+        headline=`need ~${Math.max(0,needT).toFixed(1)}% on upcoming tests`;
+        sub=`and maintain your daily average. based on ${fTP+fDP} pts of upcoming work.`;
+      } else if(fTP>0){
+        const needed=((target-(hD?dA*0.4:0))/0.6*totalTP-earnT*tP)*100/fTP;
+        headline=`need ~${Math.max(0,needed).toFixed(1)}% on upcoming tests`;
+        sub=`${fTP}pts of test work coming up.`;
+      } else {
+        const needed=((target-(hT?tA*0.6:0))/0.4*totalDP-earnD*dP)*100/fDP;
+        headline=`need ~${Math.max(0,needed).toFixed(1)}% on upcoming daily work`;
+        sub=`${fDP}pts of daily work coming up.`;
+      }
+    }
+  }
+  const h=document.getElementById('calc-headline'),s=document.getElementById('calc-sub');
+  h.style.color=color;h.textContent=headline;s.textContent=sub;
+  document.getElementById('calc-result').classList.add('show');
+}
+
+let simRowCount=0;
+function addSimRow(cat='',wt=''){
+  const id=++simRowCount;
+  const tr=document.createElement('tr');tr.id='sim-row-'+id;
+  tr.innerHTML=`<td><input type="text" placeholder="Category" value="${cat}"></td><td><input type="number" placeholder="%" min="0" max="100" value="${wt}"></td><td><input type="number" placeholder="%" min="0" max="100"></td><td><button class="remove-btn" onclick="document.getElementById('sim-row-${id}').remove()">×</button></td>`;
+  document.getElementById('sim-tbody').appendChild(tr);
+}
+
+function runSimulator(){
+  let total=0,weighted=0;
+  document.querySelectorAll('#sim-tbody tr').forEach(row=>{
+    const inputs=row.querySelectorAll('input');
+    const wt=parseFloat(inputs[1]?.value)||0;
+    const sc=parseFloat(inputs[2]?.value);
+    total+=wt;if(!isNaN(sc))weighted+=wt*sc/100;
+  });
+  if(total===0){alert('Add at least one category.');return;}
+  const grade=total>0?weighted/total*100:0;
+  const h=document.getElementById('sim-headline'),s=document.getElementById('sim-sub');
+  h.style.color=grade>=90?'var(--green)':grade>=80?'var(--amber)':'var(--red)';
+  h.textContent=grade.toFixed(1)+'% ('+letterGrade(grade)+')';
+  s.textContent=`weighted total: ${(weighted*100).toFixed(0)}/${(total*100).toFixed(0)} points across ${total.toFixed(0)}% weight`;
+  document.getElementById('sim-result').classList.add('show');
+}
+
+// ── CANVAS SYNC (no token, no CORS) ──
+// Canvas blocks cross-origin API calls, so we run the fetch FROM the Canvas tab
+// itself via a bookmarklet. It uses your existing login cookie — no token needed.
+// The bookmarklet copies the data; this page reads it back from the clipboard.
+
+const CANVAS_BASE='https://southlakecarroll.instructure.com';
+const SYNC_PREFIX='SCHOOLMGR::';
+
+function classifyType(name){ return /test|quiz|exam|project|presentation|timed write|ap mc|skills quiz|assessment/i.test(name)?'test':'daily'; }
+
+// Build the bookmarklet source from the live COURSES list
+function buildBookmarklet(){
+  const map={};COURSES.forEach(c=>map[c.id]=c.name);
+  const src=
+    "(async()=>{"+
+      "var M="+JSON.stringify(map)+",O=[],F=0;"+
+      "for(var k in M){"+
+        "try{"+
+          "var r=await fetch('/api/v1/courses/'+k+'/assignments?per_page=100&include[]=submission',{credentials:'same-origin'});"+
+          "if(!r.ok){F++;continue;}"+
+          "var d=await r.json();"+
+          "for(var i=0;i<d.length;i++){var a=d[i];"+
+            "if(a.due_at)O.push({c:M[k],n:a.name,d:a.due_at.slice(0,10),p:a.points_possible||0,s:(a.submission&&a.submission.submitted_at)?1:0});"+
+          "}"+
+        "}catch(e){F++;}"+
+      "}"+
+      "var P='"+SYNC_PREFIX+"'+JSON.stringify(O);"+
+      "function B(t,ok){var C=ok?'#ffffff':'#ff6b6b',x=document.createElement('div');"+
+        "x.style.cssText='position:fixed;top:16px;right:16px;z-index:2147483647;background:#000;color:'+C+';border:1px solid '+C+';padding:14px 18px;border-radius:8px;font:600 13px/1.5 ui-monospace,Menlo,monospace;box-shadow:0 6px 30px rgba(0,0,0,.6);max-width:320px';"+
+        "x.textContent=t;document.body.appendChild(x);setTimeout(function(){x.remove()},6000);}"+
+      "try{await navigator.clipboard.writeText(P);"+
+        "B('Copied '+O.length+' assignments'+(F?' ('+F+' course(s) unreadable)':'')+'. Switch to your dashboard and click Refresh.',1);"+
+      "}catch(e){"+
+        "var ta=document.createElement('textarea');ta.value=P;"+
+        "ta.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2147483647;width:70vw;height:40vh';"+
+        "document.body.appendChild(ta);ta.select();"+
+        "try{document.execCommand('copy');ta.remove();B('Copied '+O.length+' assignments. Switch to your dashboard and click Refresh.',1);}"+
+        "catch(e2){B('Auto-copy blocked — press Ctrl+C now, then close this box.',0);}"+
+      "}"+
+    "})()";
+  return 'javascript:'+encodeURIComponent(src);
+}
+
+// Parse either the compact bookmarklet payload or raw Canvas JSON
+function parseSyncPayload(raw){
+  raw=(raw||'').trim();
+  const i=raw.indexOf(SYNC_PREFIX);
+  if(i>=0)raw=raw.slice(i+SYNC_PREFIX.length).trim();
+  if(!raw.startsWith('['))throw new Error('That doesn\'t look like sync data. Run the bookmarklet on Canvas first.');
+  const arr=JSON.parse(raw);
+  if(!Array.isArray(arr))throw new Error('Expected a list of assignments.');
+  const fresh=arr.map(o=>{
+    const name=o.n!=null?o.n:o.name;
+    const course=o.c!=null?o.c:o.course;
+    const due=o.d!=null?o.d:(o.due||(o.due_at?String(o.due_at).slice(0,10):null));
+    if(!name||!course||!due)return null;
+    return {
+      course, name, due,
+      points:(o.p!=null?o.p:(o.points!=null?o.points:(o.points_possible||0)))||0,
+      state:(o.s===1||o.state==='submitted')?'submitted':'unsubmitted',
+      type:classifyType(name)
+    };
+  }).filter(Boolean);
+  if(!fresh.length)throw new Error('No assignments with due dates found in that data.');
+  fresh.sort((a,b)=>new Date(a.due)-new Date(b.due));
+  return fresh;
+}
+
+function applySync(fresh){
+  ASSIGNMENTS=fresh;
+  renderStats();renderCourseCards();renderAssignmentList();
+  if(document.getElementById('tab-calendar').classList.contains('active'))renderCalendar();
+  const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  document.getElementById('sync-label').textContent='synced '+t;
+  const btn=document.getElementById('refresh-btn');
+  btn.className='refresh-btn success';btn.textContent='✓ '+fresh.length+' loaded';btn.disabled=false;
+  setTimeout(()=>{btn.className='refresh-btn';btn.textContent='⟳ Refresh';},3000);
+  toast('<strong>// synced</strong><br>'+fresh.length+' assignments loaded from Canvas','success',4000);
+}
+
+// Main refresh: try clipboard silently, else open the sync panel
+async function refreshFromCanvas(){
+  const btn=document.getElementById('refresh-btn');
+  btn.className='refresh-btn syncing';btn.textContent='⟳ reading…';btn.disabled=true;
+  try{
+    const txt=await navigator.clipboard.readText();
+    if(txt&&txt.includes(SYNC_PREFIX)){ applySync(parseSyncPayload(txt)); return; }
+  }catch(e){ /* clipboard read blocked — fall through to panel */ }
+  btn.className='refresh-btn';btn.textContent='⟳ Refresh';btn.disabled=false;
+  showSyncPanel();
+}
+
+function showSyncPanel(){
+  document.getElementById('sync-modal').style.display='flex';
+  const box=document.getElementById('paste-box');
+  if(box)box.value='';
+  const w=document.getElementById('sync-warn');
+  if(w)w.style.display='none';
+}
+function hideSyncPanel(){ document.getElementById('sync-modal').style.display='none'; }
+
+function handlePaste(){
+  const box=document.getElementById('paste-box');
+  const warn=document.getElementById('sync-warn');
+  try{
+    const fresh=parseSyncPayload(box.value);
+    hideSyncPanel();
+    applySync(fresh);
+  }catch(e){
+    warn.style.display='block';
+    warn.innerHTML='// '+e.message;
+  }
+}
+
+// Auto-apply the moment they paste into the box
+function wireSyncPanel(){
+  const box=document.getElementById('paste-box');
+  box.addEventListener('paste',()=>setTimeout(handlePaste,30));
+  box.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))handlePaste(); });
+}
+
+// Copy the console version of the script (fallback for people who prefer devtools)
+async function copyConsoleScript(){
+  const src=decodeURIComponent(buildBookmarklet().slice('javascript:'.length));
+  try{
+    await navigator.clipboard.writeText(src);
+    const b=document.getElementById('copy-script-btn');
+    b.textContent='✓ copied';setTimeout(()=>b.textContent='copy console script',2000);
+  }catch(e){ toast('// copy blocked — select the bookmarklet link instead','error',4000); }
+}
+
+// ── DATE ──
+function updateDate(){
+  const now=new Date();
+  document.getElementById('date-display').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+// ── INIT ──
+function init(){
+  loadManual();
+  updateDate();
+  // Show last sync dates
+  if(SYNC_DATE) document.getElementById('sync-label').textContent='canvas: '+SYNC_DATE;
+  if(SKYWARD_LAST_SYNC) document.getElementById('skyward-label').textContent='skyward: '+SKYWARD_LAST_SYNC;
+  if(Object.keys(SKYWARD_GRADES).length>0) {
+    Object.keys(SKYWARD_GRADES).forEach(k=>{ if(SKYWARD_GRADES[k])grades[k]=SKYWARD_GRADES[k]; });
+  }
+  renderStats();renderCourseCards();renderAssignmentList();populateSelects();renderCalendar();wireSyncPanel();
+}
+init();
+</script>
+</body>
+</html>
